@@ -76,7 +76,7 @@ Silicon flattens the execution graph and performs **liveness analysis** to calcu
 
 ## Getting Started
 
-1.  **Clone the Repo**: `git clone https://github.com/amapara27/embedded-micrograd-engine.git`
+1.  **Clone the Repo**: `git clone https://github.com/amapara27/silicon-edge-ai-compiler.git`
 2.  **Run Frontend**: `cd frontend && npm install && npm run dev`
 3.  **Run Backend**: `cd backend && pip install -r requirements.txt && python main.py`
 
