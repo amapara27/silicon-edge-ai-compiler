@@ -3,6 +3,7 @@
 import { DragEvent } from 'react';
 import { Circle, Layers, Target, Cpu, Zap } from 'lucide-react';
 import { useGraphStore, TargetChip } from '@/store/graphStore';
+import { OnnxUploader } from './OnnxUploader';
 
 interface DraggableNodeProps {
     type: string;
@@ -54,9 +55,16 @@ export function Sidebar() {
                 </div>
             </div>
 
-            {/* Node Templates */}
+            {/* ONNX Upload + Node Templates */}
             <div className="p-4 flex-1 overflow-auto">
+                {/* ONNX Upload */}
                 <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
+                    Import Model
+                </h2>
+                <OnnxUploader />
+
+                {/* Node Templates */}
+                <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mt-6 mb-3">
                     Drag to Add
                 </h2>
                 <div className="space-y-2">
