@@ -6,6 +6,7 @@ import tempfile
 import os
 
 # weight info class
+@dataclass
 class WeightInfo:
     name: str
     shape: list[int]
@@ -14,6 +15,7 @@ class WeightInfo:
 
 
 # layer info class
+@dataclass
 class LayerInfo:
     name: str
     op_type: str
@@ -22,6 +24,7 @@ class LayerInfo:
 
 
 # model info class
+@dataclass
 class ModelInfo:
     inputs: list[dict]
     outputs: list[dict]
@@ -34,7 +37,6 @@ class ModelInfo:
     total_parameters: int = 0
 
 
-# ONNX dtype mapping
 ONNX_DTYPE_MAP = {
     1: "float32",
     2: "uint8",
@@ -141,12 +143,7 @@ def verify_onnx_model(model_path: str) -> tuple[bool, Optional[str]]:
         return False, str(e)
 
 
-def verify_onnx_with_data(
-    onnx_bytes: bytes, 
-    data_bytes: bytes,
-    data_filename: str
-) -> tuple[bool, Optional[onnx.ModelProto], Optional[str]]:
-
+def verify_onnx_with_data(onnx_bytes: bytes, data_bytes: bytes, data_filename: str) -> tuple[bool, Optional[onnx.ModelProto], Optional[str]]:
     try:
         # create temp directory
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -38,6 +38,9 @@ interface GraphState {
     updateNodeData: (nodeId: string, data: Partial<NodeData>) => void;
     setTargetChip: (chip: TargetChip) => void;
     compile: () => void;
+    setNodes: (nodes: Node<NodeData>[]) => void;
+    setEdges: (edges: Edge[]) => void;
+    clearGraph: () => void;
 }
 
 // Initial placeholder network
@@ -188,4 +191,17 @@ export const useGraphStore = create<GraphState>((set, get) => ({
         const code = generatePlaceholderCode(nodes, targetChip);
         set({ generatedCode: code });
     },
+
+    setNodes: (nodes) => {
+        set({ nodes });
+    },
+
+    setEdges: (edges) => {
+        set({ edges });
+    },
+
+    clearGraph: () => {
+        set({ nodes: [], edges: [], selectedNodeId: null, generatedCode: '' });
+    },
 }));
+

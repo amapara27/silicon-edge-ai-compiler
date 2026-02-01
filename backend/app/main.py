@@ -3,10 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 import sys
 from pathlib import Path
 
-# add backend root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from api.modules.model_upload import router as model_router
+from api.modules.load_model import router as load_model_router
 
 app = FastAPI(
     title="Silicon API",
@@ -14,7 +13,7 @@ app = FastAPI(
     version="0.1.0"
 )
 
-# CORS
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],
@@ -23,15 +22,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# register module routers
-app.include_router(model_router)
 
-
-@app.get("/")
-async def root():
-    return {"message": "Silicon API", "status": "running"}
-
-
-@app.get("/health")
-async def health():
-    return {"status": "healthy"}
+app.include_router(load_model_router)

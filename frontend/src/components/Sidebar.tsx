@@ -3,7 +3,9 @@
 import { DragEvent } from 'react';
 import { Circle, Layers, Target, Cpu, Zap } from 'lucide-react';
 import { useGraphStore, TargetChip } from '@/store/graphStore';
+import { useAppStore } from '@/store/appStore';
 import { OnnxUploader } from './OnnxUploader';
+import { ImportModelModal } from './ImportModelModal';
 
 interface DraggableNodeProps {
     type: string;
@@ -37,8 +39,10 @@ function DraggableNode({ type, label, icon, color }: DraggableNodeProps) {
 
 export function Sidebar() {
     const { targetChip, setTargetChip, compile, generatedCode } = useGraphStore();
+    const { mode } = useAppStore();
 
     const chips: TargetChip[] = ['STM32F401', 'ESP32'];
+    const isImportMode = mode === 'import-existing';
 
     return (
         <div className="w-64 bg-zinc-900/50 backdrop-blur-sm border-r border-zinc-800 flex flex-col">
@@ -55,38 +59,50 @@ export function Sidebar() {
                 </div>
             </div>
 
-            {/* ONNX Upload + Node Templates */}
+            {/* Content based on mode */}
             <div className="p-4 flex-1 overflow-auto">
-                {/* ONNX Upload */}
-                <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
-                    Import Model
-                </h2>
-                <OnnxUploader />
+                {isImportMode ? (
+                    <>
+                        {/* Import Model Section */}
+                        <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
+                            Import Model
+                        </h2>
+                        <ImportModelModal />
+                    </>
+                ) : (
+                    <>
+                        {/* ONNX Upload for build-new mode */}
+                        <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
+                            Import Model
+                        </h2>
+                        <OnnxUploader />
 
-                {/* Node Templates */}
-                <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mt-6 mb-3">
-                    Drag to Add
-                </h2>
-                <div className="space-y-2">
-                    <DraggableNode
-                        type="inputNode"
-                        label="Input Layer"
-                        icon={<Circle className="w-4 h-4 fill-current/30" />}
-                        color="emerald"
-                    />
-                    <DraggableNode
-                        type="layerNode"
-                        label="Dense Layer"
-                        icon={<Layers className="w-4 h-4" />}
-                        color="slate"
-                    />
-                    <DraggableNode
-                        type="outputNode"
-                        label="Output Layer"
-                        icon={<Target className="w-4 h-4" />}
-                        color="orange"
-                    />
-                </div>
+                        {/* Node Templates */}
+                        <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mt-6 mb-3">
+                            Drag to Add
+                        </h2>
+                        <div className="space-y-2">
+                            <DraggableNode
+                                type="inputNode"
+                                label="Input Layer"
+                                icon={<Circle className="w-4 h-4 fill-current/30" />}
+                                color="emerald"
+                            />
+                            <DraggableNode
+                                type="layerNode"
+                                label="Dense Layer"
+                                icon={<Layers className="w-4 h-4" />}
+                                color="slate"
+                            />
+                            <DraggableNode
+                                type="outputNode"
+                                label="Output Layer"
+                                icon={<Target className="w-4 h-4" />}
+                                color="orange"
+                            />
+                        </div>
+                    </>
+                )}
 
                 {/* Target Chip */}
                 <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mt-6 mb-3">
@@ -131,3 +147,4 @@ export function Sidebar() {
         </div>
     );
 }
+

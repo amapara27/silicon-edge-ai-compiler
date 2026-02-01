@@ -64,7 +64,7 @@ export const useUploadStore = create<UploadState>((set) => ({
                 formData.append('data_file', dataFile);
             }
 
-            const response = await fetch(`${API_URL}/model/upload`, {
+            const response = await fetch(`${API_URL}/load-model/upload`, {
                 method: 'POST',
                 body: formData,
             });

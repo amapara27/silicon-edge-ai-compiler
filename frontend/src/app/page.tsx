@@ -12,12 +12,14 @@ import {
 import '@xyflow/react/dist/style.css';
 
 import { useGraphStore, NodeData } from '@/store/graphStore';
+import { useAppStore } from '@/store/appStore';
 import { InputNode, LayerNode, OutputNode } from '@/components/nodes';
 import { Sidebar } from '@/components/Sidebar';
 import { Inspector } from '@/components/Inspector';
 import { CodePreview } from '@/components/CodePreview';
-import { Settings2, Code2, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState } from 'react';
+import { LandingPage } from '@/components/LandingPage';
+import { Settings2, Code2, ChevronLeft, ChevronRight, Home as HomeIcon } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 const nodeTypes = {
   inputNode: InputNode,
@@ -27,7 +29,7 @@ const nodeTypes = {
 
 let nodeId = 10;
 
-export default function Home() {
+function Playground() {
   const {
     nodes,
     edges,
@@ -36,11 +38,21 @@ export default function Home() {
     onConnect,
     addNode,
     setSelectedNode,
+    clearGraph,
   } = useGraphStore();
+
+  const { goToLanding, mode } = useAppStore();
 
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<'inspector' | 'code'>('inspector');
+
+  // Clear graph when entering build-new mode
+  useEffect(() => {
+    if (mode === 'build-new') {
+      clearGraph();
+    }
+  }, [mode, clearGraph]);
 
   const onDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -106,42 +118,60 @@ export default function Home() {
       <Sidebar />
 
       {/* Center Canvas */}
-      <div ref={reactFlowWrapper} className="flex-1 relative" onDragOver={onDragOver} onDrop={onDrop}>
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          onNodeClick={onNodeClick}
-          onPaneClick={onPaneClick}
-          nodeTypes={nodeTypes}
-          fitView
-          className="bg-zinc-950"
-        >
-          <Background
-            variant={BackgroundVariant.Dots}
-            gap={20}
-            size={1}
-            color="#27272a"
-          />
-          <Controls className="!bg-zinc-800 !border-zinc-700 !rounded-xl [&>button]:!bg-zinc-800 [&>button]:!border-zinc-700 [&>button]:!text-zinc-400 [&>button:hover]:!bg-zinc-700" />
-          <MiniMap
-            className="!bg-zinc-900 !border-zinc-800 !rounded-xl"
-            nodeColor={(node) => {
-              switch (node.type) {
-                case 'inputNode':
-                  return '#34d399';
-                case 'layerNode':
-                  return '#94a3b8';
-                case 'outputNode':
-                  return '#fb923c';
-                default:
-                  return '#71717a';
-              }
-            }}
-          />
-        </ReactFlow>
+      <div className="flex-1 flex flex-col">
+        {/* Header with Home button */}
+        <div className="h-12 bg-zinc-900/50 border-b border-zinc-800 flex items-center px-4">
+          <button
+            onClick={goToLanding}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+          >
+            <HomeIcon className="w-4 h-4" />
+            Home
+          </button>
+          <div className="ml-4 text-sm text-zinc-500">
+            {mode === 'build-new' && 'Building New Model'}
+            {mode === 'import-existing' && 'Imported Model'}
+          </div>
+        </div>
+
+        {/* Canvas */}
+        <div ref={reactFlowWrapper} className="flex-1 relative" onDragOver={onDragOver} onDrop={onDrop}>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            onNodeClick={onNodeClick}
+            onPaneClick={onPaneClick}
+            nodeTypes={nodeTypes}
+            fitView
+            className="bg-zinc-950"
+          >
+            <Background
+              variant={BackgroundVariant.Dots}
+              gap={20}
+              size={1}
+              color="#27272a"
+            />
+            <Controls className="!bg-zinc-800 !border-zinc-700 !rounded-xl [&>button]:!bg-zinc-800 [&>button]:!border-zinc-700 [&>button]:!text-zinc-400 [&>button:hover]:!bg-zinc-700" />
+            <MiniMap
+              className="!bg-zinc-900 !border-zinc-800 !rounded-xl"
+              nodeColor={(node) => {
+                switch (node.type) {
+                  case 'inputNode':
+                    return '#34d399';
+                  case 'layerNode':
+                    return '#94a3b8';
+                  case 'outputNode':
+                    return '#fb923c';
+                  default:
+                    return '#71717a';
+                }
+              }}
+            />
+          </ReactFlow>
+        </div>
       </div>
 
       {/* Right Panel */}
@@ -207,3 +237,15 @@ export default function Home() {
     </div>
   );
 }
+
+export default function Home() {
+  const { mode } = useAppStore();
+
+  // Show landing page or playground based on mode
+  if (mode === 'landing') {
+    return <LandingPage />;
+  }
+
+  return <Playground />;
+}
+
