@@ -6,6 +6,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from api.modules.load_model import router as load_model_router
+from api.modules.compile_model import router as compile_model_router
 
 app = FastAPI(
     title="Silicon API",
@@ -24,3 +25,4 @@ app.add_middleware(
 
 
 app.include_router(load_model_router)
+app.include_router(compile_model_router)

@@ -1,9 +1,10 @@
 'use client';
 
 import { DragEvent } from 'react';
-import { Circle, Layers, Target, Cpu, Zap } from 'lucide-react';
+import { Circle, Layers, Target, Cpu, Zap, Loader2 } from 'lucide-react';
 import { useGraphStore, TargetChip } from '@/store/graphStore';
 import { useAppStore } from '@/store/appStore';
+import { useUploadStore } from '@/store/uploadStore';
 import { OnnxUploader } from './OnnxUploader';
 import { ImportModelModal } from './ImportModelModal';
 
@@ -38,11 +39,21 @@ function DraggableNode({ type, label, icon, color }: DraggableNodeProps) {
 }
 
 export function Sidebar() {
-    const { targetChip, setTargetChip, compile, generatedCode } = useGraphStore();
+    const { targetChip, setTargetChip } = useGraphStore();
     const { mode } = useAppStore();
+    const { modelInfo, compileModel, compileStatus, compiledSourceCode, onnxFileName } = useUploadStore();
 
     const chips: TargetChip[] = ['STM32F401', 'ESP32'];
     const isImportMode = mode === 'import-existing';
+    const isModelLoaded = modelInfo !== null;
+    const isCompiling = compileStatus === 'compiling';
+    const hasCompiledCode = compileStatus === 'success' && compiledSourceCode !== null;
+
+    const handleCompile = () => {
+        // Use the filename without extension as model name
+        const modelName = onnxFileName?.replace('.onnx', '') || 'model';
+        compileModel(modelName, targetChip);
+    };
 
     return (
         <div className="w-64 bg-zinc-900/50 backdrop-blur-sm border-r border-zinc-800 flex flex-col">
@@ -132,17 +143,32 @@ export function Sidebar() {
             {/* Compile Button */}
             <div className="p-4 border-t border-zinc-800">
                 <button
-                    onClick={compile}
-                    className="
-            w-full py-3 px-4 rounded-xl font-semibold
-            bg-gradient-to-r from-violet-600 to-indigo-600
-            hover:from-violet-500 hover:to-indigo-500
-            text-white shadow-lg shadow-violet-500/25
-            transition-all duration-200 active:scale-[0.98]
-          "
+                    onClick={handleCompile}
+                    disabled={!isModelLoaded || isCompiling}
+                    className={`
+                        w-full py-3 px-4 rounded-xl font-semibold
+                        transition-all duration-200 active:scale-[0.98]
+                        flex items-center justify-center gap-2
+                        ${isModelLoaded && !isCompiling
+                            ? 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-lg shadow-violet-500/25'
+                            : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                        }
+                    `}
                 >
-                    {generatedCode ? 'Recompile' : 'Compile to C'}
+                    {isCompiling ? (
+                        <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Compiling...
+                        </>
+                    ) : hasCompiledCode ? (
+                        'Recompile to C'
+                    ) : (
+                        'Compile to C'
+                    )}
                 </button>
+                {!isModelLoaded && (
+                    <p className="text-xs text-zinc-600 text-center mt-2">Upload a model first</p>
+                )}
             </div>
         </div>
     );

@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from typing import Optional
 import sys
 from pathlib import Path
+import onnx
 
 # add services
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -13,6 +14,10 @@ from services.load_model import (
 )
 
 router = APIRouter(prefix="/load-model", tags=["load-model"])
+
+# Global storage for loaded model (reused by compile_model)
+_loaded_model: Optional[onnx.ModelProto] = None
+_loaded_model_info: Optional[dict] = None
 
 
 class UploadResponse(BaseModel):
@@ -83,15 +88,15 @@ async def _validate_and_load(file: UploadFile, data_file: Optional[UploadFile]):
         raise HTTPException(status_code=500, detail=f"Failed to read files: {e}")
     
     if not data_bytes:
-        return False, None, "Data file is required for models with external data"
+        return False, None, None, "Data file is required for models with external data"
     
     # validate uploaded model
     is_valid, model, error = verify_onnx_with_data(onnx_bytes, data_bytes, data_filename)
     if not is_valid:
-        return False, None, error
+        return False, None, None, error
     
-    # extract model info
-    return True, extract_model_info(model), None
+    # extract model info and return both model and info
+    return True, model, extract_model_info(model), None
 
 # map model info to dict
 def _model_info_to_dict(info: ModelInfo):
@@ -138,9 +143,15 @@ def _build_react_flow_graph(info: ModelInfo) -> tuple[list[ReactFlowNode], list[
 
 @router.post("/upload", response_model=ImportResponse)
 async def upload_onnx(file: UploadFile = File(...), data_file: Optional[UploadFile] = File(None)):
-    valid, info, error = await _validate_and_load(file, data_file)
+    global _loaded_model, _loaded_model_info
+    
+    valid, model, info, error = await _validate_and_load(file, data_file)
     if not valid:
         return ImportResponse(valid=False, error=error)
+    
+    # Store model for use by compile_model
+    _loaded_model = model
+    _loaded_model_info = _model_info_to_dict(info)
     
     # Generate graph data
     nodes, edges = _build_react_flow_graph(info)
@@ -150,6 +161,16 @@ async def upload_onnx(file: UploadFile = File(...), data_file: Optional[UploadFi
         valid=True, 
         nodes=nodes, 
         edges=edges, 
-        model_info=_model_info_to_dict(info)
+        model_info=_loaded_model_info
     )
 
+
+# Getter functions for compile_model module
+def get_loaded_model() -> Optional[onnx.ModelProto]:
+    """Get the currently loaded ONNX model"""
+    return _loaded_model
+
+
+def get_loaded_model_info() -> Optional[dict]:
+    """Get the currently loaded model info"""
+    return _loaded_model_info
