@@ -1,18 +1,11 @@
-# services/compile_model.py
-"""
-C Code Generator Service for ONNX models.
-Generates embedded C code with weights and forward pass functions.
-"""
-
 from dataclasses import dataclass
 from typing import Optional
 import numpy as np
 import onnx
 
-
+# compiled model class
 @dataclass
 class CompiledModel:
-    """Generated C code files"""
     source_code: str
     header_code: str
     model_name: str
@@ -55,8 +48,8 @@ def _get_weight_data(model: onnx.ModelProto, name: str) -> Optional[np.ndarray]:
     return None
 
 
+# generates header file
 def generate_header(model_name: str, model_info: dict, target_chip: str) -> str:
-    """Generate the .h header file"""
     inputs = model_info.get("inputs", [])
     outputs = model_info.get("outputs", [])
     
@@ -113,21 +106,15 @@ size_t {model_name}_get_output_size(void);
 """
     return header
 
-
-def generate_source(
-    model_name: str, 
-    model_info: dict, 
-    model: onnx.ModelProto,
-    target_chip: str
-) -> str:
-    """Generate the .c source file with weights and forward pass"""
-    
+# generates source file
+def generate_source(model_name: str, model_info: dict, model: onnx.ModelProto, target_chip: str):
+    # gets the model info from the generated dict
     layers = model_info.get("layers", [])
     weights_info = model_info.get("weights", [])
     inputs = model_info.get("inputs", [])
     outputs = model_info.get("outputs", [])
     
-    # Calculate sizes
+    # calculate sizes
     input_size = 1
     if inputs and inputs[0].get("shape"):
         for dim in inputs[0]["shape"]:
@@ -140,7 +127,7 @@ def generate_source(
             if isinstance(dim, int) and dim > 0:
                 output_size *= dim
     
-    # Generate weight arrays
+    # generate weight arrays
     weight_sections = []
     for w in weights_info:
         data = _get_weight_data(model, w["name"])
@@ -151,10 +138,10 @@ def generate_source(
     
     weights_code = "\n\n".join(weight_sections) if weight_sections else "/* No weights */"
     
-    # Calculate buffer sizes for intermediate activations
+    # calculate buffer sizes for intermediate activations
     max_buffer_size = max(input_size, output_size, 1024)  # At least 1KB
     
-    # Generate layer forward pass code
+    # generate layer forward pass code
     layer_code_lines = []
     prev_output = "input"
     
@@ -163,7 +150,7 @@ def generate_source(
         layer_inputs = layer.get("inputs", [])
         layer_outputs = layer.get("outputs", [])
         
-        # Get weight/bias names for this layer
+        # get weight/bias names for this layer
         weight_name = None
         bias_name = None
         if len(layer_inputs) > 1:
@@ -171,7 +158,7 @@ def generate_source(
         if len(layer_inputs) > 2:
             bias_name = layer_inputs[2].replace(".", "_").replace("/", "_")
         
-        # Find weight shape
+        # find weight shape
         weight_shape = None
         for w in weights_info:
             if w["name"] == layer_inputs[1] if len(layer_inputs) > 1 else None:
@@ -346,26 +333,14 @@ void {model_name}_test_inference(void) {{
 """
     return source
 
-
+# compiles model and returns compiled model object
 def compile_model(
     model: onnx.ModelProto,
     model_info: dict,
     model_name: str = "model",
     target_chip: str = "STM32F401"
 ) -> CompiledModel:
-    """
-    Generate C code from ONNX model.
-    
-    Args:
-        model: Loaded ONNX model proto
-        model_info: Extracted model info dict
-        model_name: Name for generated files
-        target_chip: Target microcontroller
-    
-    Returns:
-        CompiledModel with source and header code
-    """
-    # Clean model name for C identifiers
+
     safe_name = model_name.replace("-", "_").replace(".", "_").replace(" ", "_").lower()
     
     header = generate_header(safe_name, model_info, target_chip)
