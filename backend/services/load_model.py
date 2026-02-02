@@ -122,6 +122,7 @@ def extract_model_info(model: onnx.ModelProto) -> ModelInfo:
     # extract layers
     layers = extract_layers(model)
     
+    # returns all the model info as a modelinfo object
     return ModelInfo(
         inputs=inputs,
         outputs=outputs,
@@ -142,7 +143,7 @@ def verify_onnx_model(model_path: str) -> tuple[bool, Optional[str]]:
     except Exception as e:
         return False, str(e)
 
-
+# verifies onnx model with .data file
 def verify_onnx_with_data(onnx_bytes: bytes, data_bytes: bytes, data_filename: str) -> tuple[bool, Optional[onnx.ModelProto], Optional[str]]:
     try:
         # create temp directory
@@ -187,7 +188,7 @@ def verify_onnx_with_data(onnx_bytes: bytes, data_bytes: bytes, data_filename: s
     except Exception as e:
         return False, None, str(e)
 
-
+# test function
 def main():
     model_path = "../test_models/model.onnx"
     is_valid, error = verify_onnx_model(model_path)
