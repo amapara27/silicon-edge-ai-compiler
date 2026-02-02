@@ -167,10 +167,8 @@ async def upload_onnx(file: UploadFile = File(...), data_file: Optional[UploadFi
 
 # Getter functions for compile_model module
 def get_loaded_model() -> Optional[onnx.ModelProto]:
-    """Get the currently loaded ONNX model"""
     return _loaded_model
 
 
 def get_loaded_model_info() -> Optional[dict]:
-    """Get the currently loaded model info"""
     return _loaded_model_info

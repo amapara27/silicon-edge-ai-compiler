@@ -28,12 +28,9 @@ class CompileResponse(BaseModel):
     model_name: Optional[str] = None
 
 
+# posts generated C files
 @router.post("/compile", response_model=CompileResponse)
 async def compile_to_c(request: CompileRequest):
-    """
-    Compile the loaded ONNX model to C code.
-    Returns both .c source and .h header as strings.
-    """
     model = get_loaded_model()
     model_info = get_loaded_model_info()
     
