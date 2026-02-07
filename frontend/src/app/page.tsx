@@ -17,8 +17,9 @@ import { InputNode, LayerNode, OutputNode } from '@/components/nodes';
 import { Sidebar } from '@/components/Sidebar';
 import { Inspector } from '@/components/Inspector';
 import { CodePreview } from '@/components/CodePreview';
+import { ProfilingPanel } from '@/components/profiling';
 import { LandingPage } from '@/components/LandingPage';
-import { Settings2, Code2, ChevronLeft, ChevronRight, Home as HomeIcon } from 'lucide-react';
+import { Settings2, Code2, ChevronLeft, ChevronRight, Home as HomeIcon, Activity } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 const nodeTypes = {
@@ -46,7 +47,7 @@ function Playground() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [leftPanelOpen, setLeftPanelOpen] = useState(false);
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'inspector' | 'code'>('inspector');
+  const [activeTab, setActiveTab] = useState<'inspector' | 'code' | 'profiling'>('inspector');
 
   // Clear graph when entering build-new mode
   useEffect(() => {
@@ -226,11 +227,24 @@ function Playground() {
                 <Code2 className="w-3.5 h-3.5" />
                 Code
               </button>
+              <button
+                onClick={() => setActiveTab('profiling')}
+                className={`
+                  flex-1 flex items-center justify-center gap-2 py-3
+                  transition-colors text-xs font-medium tracking-wide
+                  ${activeTab === 'profiling' ? 'text-violet-400 border-b-2 border-violet-400' : 'text-zinc-500 hover:text-zinc-300'}
+                `}
+              >
+                <Activity className="w-3.5 h-3.5" />
+                Profiling
+              </button>
             </div>
 
             {/* Tab Content */}
             <div className="flex-1 overflow-auto">
-              {activeTab === 'inspector' ? <Inspector /> : <CodePreview />}
+              {activeTab === 'inspector' && <Inspector />}
+              {activeTab === 'code' && <CodePreview />}
+              {activeTab === 'profiling' && <ProfilingPanel />}
             </div>
           </div>
         )}
