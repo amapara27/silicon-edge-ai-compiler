@@ -97,13 +97,13 @@ def calculate_ram_usage(
     Returns:
         Estimated RAM usage in bytes
     """
-    bytes_per_element = 1 if quantized else 4
-    
     # Calculate input buffer size
     input_size = 0
     if model_info.inputs:
         for inp in model_info.inputs:
             shape = input_shape or inp.get('shape', [])
+            dtype = inp.get('dtype', 'float32')
+            bytes_per_element = 1 if quantized else get_dtype_bytes(dtype)
             # Filter out dynamic dimensions (strings or -1)
             numeric_shape = [d for d in shape if isinstance(d, int) and d > 0]
             if numeric_shape:
@@ -115,6 +115,8 @@ def calculate_ram_usage(
     if model_info.outputs:
         for out in model_info.outputs:
             shape = out.get('shape', [])
+            dtype = out.get('dtype', 'float32')
+            bytes_per_element = 1 if quantized else get_dtype_bytes(dtype)
             numeric_shape = [d for d in shape if isinstance(d, int) and d > 0]
             if numeric_shape:
                 import numpy as np

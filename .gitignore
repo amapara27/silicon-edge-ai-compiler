@@ -7,3 +7,5 @@
 /frontend/node_modules
 
 /backend/test_models
+
+__pycache__

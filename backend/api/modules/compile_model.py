@@ -40,19 +40,22 @@ class CompileResponse(BaseModel):
     model_name: Optional[str] = None
 
 # gets the cached model or compiles a new one
-def _get_or_compile():
+def _get_or_compile(request: CompileRequest):
+    global cached_compiled_model, cached_model_name, cached_target_chip
+    
     if cached_compiled_model and cached_model_name == request.model_name and cached_target_chip == request.target_chip:
         return cached_compiled_model
     else:
-        cached_compiled_model = compile_model(
+        compiled = compile_model(
             model=get_loaded_model(),
             model_info=get_loaded_model_info(),
             model_name=request.model_name,
             target_chip=request.target_chip
         )
+        cached_compiled_model = compiled
         cached_model_name = request.model_name
         cached_target_chip = request.target_chip
-        return cached_compiled_model
+        return compiled
 
 
 # posts generated C files -  compiles modle to C code, ensures request is valid and model is loaded
@@ -70,7 +73,7 @@ async def compile_to_c(request: CompileRequest):
     
     # compiles the model to C code
     try:
-        compiled = _get_or_compile()
+        compiled = _get_or_compile(request)
         
         # returns a valid CompileResponse Object
         return CompileResponse(
@@ -98,7 +101,7 @@ async def download_c_files(request: CompileRequest):
         )
     
     try:
-        compiled = _get_or_compile()
+        compiled = _get_or_compile(request)
         
         # Create zip file in memory
         zip_buffer = io.BytesIO()

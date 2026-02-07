@@ -68,7 +68,7 @@ def get_tensor_info(tensor):
     return {
         'name': tensor.name,
         'shape': shape,
-        'dtype': tensor.type.tensor_type.elem_type
+        'dtype': ONNX_DTYPE_MAP.get(tensor.type.tensor_type.elem_type, 'float32')
     }
 
 
