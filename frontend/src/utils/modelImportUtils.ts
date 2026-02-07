@@ -73,9 +73,9 @@ export function layersToNodes(modelInfo: ModelInfo): Node<NodeData>[] {
             data: {
                 label: opInfo.label,
                 type: opInfo.type,
-                // Add layer-specific data
-                ...(opInfo.type === 'dense' && { units: 128 }),
-                ...(opInfo.type === 'conv2d' && { kernelSize: 3 }),
+                inputShape: layer.input_shape,
+                outputShape: layer.output_shape,
+                params: layer.params && layer.params > 0 ? layer.params : undefined,
             },
         });
     });

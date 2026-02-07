@@ -5,7 +5,8 @@ import { create } from 'zustand';
 export interface LayerProfile {
     name: string;
     type: string;
-    shape: string;
+    input_shape?: string;
+    output_shape?: string;
     paramCount: number;
     usage: number; // bytes (memory_bytes from API)
 }
@@ -60,13 +61,13 @@ const getPlaceholderData = (boardName: string): ProfilingData => {
         totalFlops: 1248000,
         boardName,
         layers: [
-            { name: 'conv1', type: 'Conv2D', shape: '26x26x32', paramCount: 320, usage: 21632 },
-            { name: 'pool1', type: 'MaxPool2D', shape: '13x13x32', paramCount: 0, usage: 5408 },
-            { name: 'conv2', type: 'Conv2D', shape: '11x11x64', paramCount: 18496, usage: 7744 },
-            { name: 'pool2', type: 'MaxPool2D', shape: '5x5x64', paramCount: 0, usage: 1600 },
-            { name: 'flatten', type: 'Flatten', shape: '1600', paramCount: 0, usage: 6400 },
-            { name: 'dense1', type: 'Dense', shape: '128', paramCount: 204928, usage: 512 },
-            { name: 'output', type: 'Dense', shape: '10', paramCount: 1290, usage: 40 },
+            { name: 'conv1', type: 'Conv2D', input_shape: '1', output_shape: '32', paramCount: 320, usage: 21632 },
+            { name: 'pool1', type: 'MaxPool2D', input_shape: undefined, output_shape: undefined, paramCount: 0, usage: 5408 },
+            { name: 'conv2', type: 'Conv2D', input_shape: '32', output_shape: '64', paramCount: 18496, usage: 7744 },
+            { name: 'pool2', type: 'MaxPool2D', input_shape: undefined, output_shape: undefined, paramCount: 0, usage: 1600 },
+            { name: 'flatten', type: 'Flatten', input_shape: undefined, output_shape: undefined, paramCount: 0, usage: 6400 },
+            { name: 'dense1', type: 'Dense', input_shape: '1600', output_shape: '128', paramCount: 204928, usage: 512 },
+            { name: 'output', type: 'Dense', input_shape: '128', output_shape: '10', paramCount: 1290, usage: 40 },
         ],
     };
 };
@@ -82,7 +83,8 @@ const transformApiResponse = (apiData: {
     layers: Array<{
         name: string;
         type: string;
-        shape: string;
+        input_shape?: string;
+        output_shape?: string;
         param_count: number;
         memory_bytes: number;
         flops: number;
@@ -98,7 +100,8 @@ const transformApiResponse = (apiData: {
         layers: apiData.layers.map(layer => ({
             name: layer.name,
             type: layer.type,
-            shape: layer.shape,
+            input_shape: layer.input_shape,
+            output_shape: layer.output_shape,
             paramCount: layer.param_count,
             usage: layer.memory_bytes,
         })),

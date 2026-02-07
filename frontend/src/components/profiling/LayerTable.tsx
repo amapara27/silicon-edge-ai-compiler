@@ -38,8 +38,11 @@ export function LayerTable({ layers }: LayerTableProps) {
                         <th className="text-left py-2 px-2 font-medium text-zinc-500 uppercase tracking-wider">
                             Type
                         </th>
-                        <th className="text-left py-2 px-2 font-medium text-zinc-500 uppercase tracking-wider">
-                            Shape
+                        <th className="text-center py-2 px-2 font-medium text-zinc-500 uppercase tracking-wider">
+                            In
+                        </th>
+                        <th className="text-center py-2 px-2 font-medium text-zinc-500 uppercase tracking-wider">
+                            Out
                         </th>
                         <th className="text-right py-2 px-2 font-medium text-zinc-500 uppercase tracking-wider">
                             Params
@@ -65,8 +68,11 @@ export function LayerTable({ layers }: LayerTableProps) {
                             <td className="py-2 px-2 text-violet-400">
                                 {layer.type}
                             </td>
-                            <td className="py-2 px-2 font-mono text-zinc-400">
-                                {layer.shape}
+                            <td className="py-2 px-2 text-center font-mono text-cyan-400">
+                                {layer.input_shape || '-'}
+                            </td>
+                            <td className="py-2 px-2 text-center font-mono text-violet-400">
+                                {layer.output_shape || '-'}
                             </td>
                             <td className="py-2 px-2 text-right font-mono text-zinc-400">
                                 {formatNumber(layer.paramCount)}

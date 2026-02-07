@@ -15,6 +15,9 @@ export interface LayerInfo {
     op_type: string;
     inputs: string[];
     outputs: string[];
+    input_shape?: string;
+    output_shape?: string;
+    params?: number;
 }
 
 export interface ModelInfo {

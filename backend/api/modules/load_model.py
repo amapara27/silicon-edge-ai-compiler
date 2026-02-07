@@ -37,6 +37,8 @@ class ReactFlowNode(BaseModel):
     position: NodePosition
     label: str
     op_type: str
+    shape: Optional[str] = None
+    params: Optional[int] = None
 
 
 class ReactFlowEdge(BaseModel):
@@ -104,7 +106,7 @@ def _model_info_to_dict(info: ModelInfo):
         "inputs": info.inputs,
         "outputs": info.outputs,
         "operators": info.operators,
-        "layers": [{"name": l.name, "op_type": l.op_type, "inputs": l.inputs, "outputs": l.outputs} for l in info.layers],
+        "layers": [{"name": l.name, "op_type": l.op_type, "inputs": l.inputs, "outputs": l.outputs, "input_shape": l.input_shape, "output_shape": l.output_shape, "params": l.params} for l in info.layers],
         "weights": [{"name": w.name, "shape": w.shape, "dtype": w.dtype, "size": w.size} for w in info.weights],
         "ir_version": info.ir_version,
         "producer_name": info.producer_name,
@@ -119,21 +121,36 @@ def _build_react_flow_graph(info: ModelInfo) -> tuple[list[ReactFlowNode], list[
     
     # input node
     if info.inputs:
-        nodes.append(ReactFlowNode(id="input-0", type="inputNode", position=NodePosition(x=100, y=200), label="Input", op_type="Input"))
+        input_shape = info.inputs[0].get('shape', []) if info.inputs else []
+        shape_str = 'x'.join(str(d) for d in input_shape if isinstance(d, int) and d > 0)
+        nodes.append(ReactFlowNode(id="input-0", type="inputNode", position=NodePosition(x=100, y=200), label="Input", op_type="Input", shape=shape_str or None))
     
-    # layer nodes
+    # layer nodes - calculate params per layer
     for i, layer in enumerate(info.layers):
+        # Find params for this layer
+        layer_params = 0
+        layer_shape = "N/A"
+        for weight in info.weights:
+            if weight.name in layer.inputs:
+                layer_params += weight.size
+                if len(weight.shape) >= 2:
+                    layer_shape = "x".join(str(d) for d in weight.shape)
+        
         nodes.append(ReactFlowNode(
             id=f"layer-{i}",
             type="outputNode" if layer.op_type == "Softmax" else "layerNode",
             position=NodePosition(x=100 + spacing * (i + 1), y=200 + (25 if i % 2 == 0 else -25)),
             label=OP_DISPLAY_NAMES.get(layer.op_type, layer.op_type),
-            op_type=layer.op_type
+            op_type=layer.op_type,
+            shape=layer_shape if layer_shape != "N/A" else None,
+            params=layer_params if layer_params > 0 else None
         ))
     
     # output node
     if info.outputs:
-        nodes.append(ReactFlowNode(id="output-0", type="outputNode", position=NodePosition(x=100 + spacing * (len(info.layers) + 1), y=200), label="Output", op_type="Output"))
+        output_shape = info.outputs[0].get('shape', []) if info.outputs else []
+        shape_str = 'x'.join(str(d) for d in output_shape if isinstance(d, int) and d > 0)
+        nodes.append(ReactFlowNode(id="output-0", type="outputNode", position=NodePosition(x=100 + spacing * (len(info.layers) + 1), y=200), label="Output", op_type="Output", shape=shape_str or None))
     
     # sequential edges
     for i in range(len(nodes) - 1):

@@ -21,6 +21,9 @@ class LayerInfo:
     op_type: str
     inputs: list[str]
     outputs: list[str]
+    input_shape: Optional[str] = None
+    output_shape: Optional[str] = None
+    params: int = 0
 
 
 # model info class
@@ -94,15 +97,41 @@ def extract_weights(model: onnx.ModelProto) -> tuple[list[WeightInfo], int]:
     return weights, total_params
 
 
-# extracts layers from model graph
-def extract_layers(model: onnx.ModelProto) -> list[LayerInfo]:
+# extracts layers from model graph with shape info from weights
+def extract_layers(model: onnx.ModelProto, weights: list[WeightInfo]) -> list[LayerInfo]:
     layers = []
+    
+    # Build a map of weight names to their info
+    weight_map = {w.name: w for w in weights}
+    
     for node in model.graph.node:
+        input_shape = None
+        output_shape = None
+        params = 0
+        
+        # Look for weights in this node's inputs to determine shapes
+        for inp_name in node.input:
+            if inp_name in weight_map:
+                w = weight_map[inp_name]
+                params += w.size
+                
+                # For Gemm/MatMul (Dense layers): weight shape is [out_features, in_features]
+                if node.op_type in ['Gemm', 'MatMul'] and len(w.shape) == 2:
+                    input_shape = str(w.shape[1])   # in_features
+                    output_shape = str(w.shape[0])  # out_features
+                # For Conv: weight shape is [out_channels, in_channels, kH, kW]
+                elif node.op_type == 'Conv' and len(w.shape) == 4:
+                    input_shape = str(w.shape[1])   # in_channels
+                    output_shape = str(w.shape[0])  # out_channels
+        
         layers.append(LayerInfo(
             name=node.name or f"{node.op_type}_{len(layers)}",
             op_type=node.op_type,
             inputs=list(node.input),
-            outputs=list(node.output)
+            outputs=list(node.output),
+            input_shape=input_shape,
+            output_shape=output_shape,
+            params=params
         ))
     return layers
 
@@ -120,7 +149,7 @@ def extract_model_info(model: onnx.ModelProto) -> ModelInfo:
     weights, total_params = extract_weights(model)
     
     # extract layers
-    layers = extract_layers(model)
+    layers = extract_layers(model, weights)
     
     # returns all the model info as a modelinfo object
     return ModelInfo(

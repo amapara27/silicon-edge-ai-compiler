@@ -10,7 +10,8 @@ class LayerProfile:
     """Profile information for a single layer."""
     name: str
     op_type: str
-    shape: str
+    input_shape: Optional[str]
+    output_shape: Optional[str]
     param_count: int
     memory_bytes: int
     flops: int
@@ -248,18 +249,11 @@ def profile_model(
         bytes_per_elem = 1 if quantized else 4
         memory_bytes = param_count * bytes_per_elem
         
-        # Get output shape string
-        output_shape = "N/A"
-        for weight in model_info.weights:
-            if weight.name in layer.inputs and len(weight.shape) >= 2:
-                # Use last dimension as output shape hint
-                output_shape = "x".join(str(d) for d in weight.shape)
-                break
-        
         layers.append(LayerProfile(
             name=layer.name,
             op_type=layer.op_type,
-            shape=output_shape,
+            input_shape=layer.input_shape,
+            output_shape=layer.output_shape,
             param_count=param_count,
             memory_bytes=memory_bytes,
             flops=layer_flop
@@ -289,7 +283,8 @@ def profile_to_dict(profile: ModelProfile) -> dict:
             {
                 'name': layer.name,
                 'type': layer.op_type,
-                'shape': layer.shape,
+                'input_shape': layer.input_shape,
+                'output_shape': layer.output_shape,
                 'param_count': layer.param_count,
                 'memory_bytes': layer.memory_bytes,
                 'flops': layer.flops
