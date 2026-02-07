@@ -20,6 +20,7 @@ class ProfileResponse(BaseModel):
     error: Optional[str] = None
     model_info: Optional[dict] = None
 
+# posts profiling
 @router.post("/profile", response_model=ProfileResponse)
 async def profile_onnx_model(
     file: UploadFile = File(...), 
@@ -42,6 +43,7 @@ async def profile_onnx_model(
         # Profile the model
         profile = service_profile_model(model, board_name=board_name, quantized=quantized)
         
+        # Return profile info as ProfileResponse object
         return ProfileResponse(
             valid=True, 
             model_info=profile_to_dict(profile)

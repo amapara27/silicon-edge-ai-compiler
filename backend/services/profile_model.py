@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from typing import Optional
 import onnx
-from load_model import extract_model_info, ModelInfo, LayerInfo
+
+from services.load_model import extract_model_info, ModelInfo, LayerInfo
 
 
 @dataclass
