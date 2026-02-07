@@ -36,6 +36,8 @@ interface UploadState {
     modelInfo: ModelInfo | null;
     onnxFileName: string | null;
     dataFileName: string | null;
+    onnxFile: File | null;      // Store file for profiling
+    dataFile: File | null;      // Store file for profiling
 
     // Compile state
     compileStatus: CompileStatus;
@@ -61,6 +63,8 @@ export const useUploadStore = create<UploadState>((set, get) => ({
     modelInfo: null,
     onnxFileName: null,
     dataFileName: null,
+    onnxFile: null,
+    dataFile: null,
 
     // Compile state
     compileStatus: 'idle',
@@ -75,6 +79,8 @@ export const useUploadStore = create<UploadState>((set, get) => ({
             uploadError: null,
             onnxFileName: onnxFile.name,
             dataFileName: dataFile?.name || null,
+            onnxFile: onnxFile,
+            dataFile: dataFile || null,
             // Reset compile state when uploading new model
             compileStatus: 'idle',
             compiledSourceCode: null,
@@ -131,6 +137,8 @@ export const useUploadStore = create<UploadState>((set, get) => ({
             modelInfo: null,
             onnxFileName: null,
             dataFileName: null,
+            onnxFile: null,
+            dataFile: null,
             compileStatus: 'idle',
             compileError: null,
             compiledSourceCode: null,

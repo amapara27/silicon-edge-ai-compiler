@@ -1,22 +1,31 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Activity, Cpu, Loader2 } from 'lucide-react';
+import { Activity, Cpu, Loader2, AlertCircle } from 'lucide-react';
 import { useProfilingStore } from '@/store/profilingStore';
+import { useUploadStore } from '@/store/uploadStore';
 import { useGraphStore } from '@/store/graphStore';
 import { ProfileMetrics } from './ProfileMetrics';
 import { LayerTable } from './LayerTable';
 
 export function ProfilingPanel() {
-    const { profilingData, isLoading, loadPlaceholderData } = useProfilingStore();
+    const { profilingData, profilingStatus, profilingError, fetchProfilingData, loadPlaceholderData } = useProfilingStore();
+    const { onnxFile, dataFile, uploadStatus } = useUploadStore();
     const { targetChip } = useGraphStore();
 
-    // Load placeholder data when target chip changes
+    // Fetch profiling data when model is uploaded or target chip changes
     useEffect(() => {
-        loadPlaceholderData(targetChip);
-    }, [targetChip, loadPlaceholderData]);
+        if (uploadStatus === 'success' && onnxFile) {
+            // Model is uploaded, fetch profiling from API
+            fetchProfilingData(onnxFile, dataFile, targetChip);
+        } else if (uploadStatus !== 'success') {
+            // No model uploaded, use placeholder data for demo
+            loadPlaceholderData(targetChip);
+        }
+    }, [uploadStatus, onnxFile, dataFile, targetChip, fetchProfilingData, loadPlaceholderData]);
 
-    if (isLoading) {
+    // Loading state
+    if (profilingStatus === 'loading') {
         return (
             <div className="flex flex-col items-center justify-center h-64 gap-3">
                 <Loader2 className="w-6 h-6 text-violet-400 animate-spin" />
@@ -25,6 +34,18 @@ export function ProfilingPanel() {
         );
     }
 
+    // Error state
+    if (profilingStatus === 'error') {
+        return (
+            <div className="p-4 text-center">
+                <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-2" />
+                <p className="text-sm text-red-400">Profiling Failed</p>
+                <p className="text-xs text-zinc-500 mt-1">{profilingError}</p>
+            </div>
+        );
+    }
+
+    // No data state
     if (!profilingData) {
         return (
             <div className="p-4 text-center">
