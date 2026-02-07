@@ -20,13 +20,13 @@ class ProfileResponse(BaseModel):
     error: Optional[str] = None
     model_info: Optional[dict] = None
 
-# posts profiling
 @router.post("/profile", response_model=ProfileResponse)
 async def profile_onnx_model(
     file: UploadFile = File(...), 
     data_file: Optional[UploadFile] = File(None),
-    board_name: str = "STM32F401", #hardcoded for now
-    quantized: bool = False
+    board_name: str = "STM32F401",
+    quantized: bool = False,
+    batch_size: int = 1
 ):
     try:
         # Read file contents
@@ -41,7 +41,7 @@ async def profile_onnx_model(
             return ProfileResponse(valid=False, error=error or "Failed to load model")
         
         # Profile the model
-        profile = service_profile_model(model, board_name=board_name, quantized=quantized)
+        profile = service_profile_model(model, board_name=board_name, quantized=quantized, batch_size=batch_size)
         
         # Return profile info as ProfileResponse object
         return ProfileResponse(

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Activity, Cpu, Loader2, AlertCircle } from 'lucide-react';
 import { useProfilingStore } from '@/store/profilingStore';
 import { useUploadStore } from '@/store/uploadStore';
@@ -12,17 +12,18 @@ export function ProfilingPanel() {
     const { profilingData, profilingStatus, profilingError, fetchProfilingData, loadPlaceholderData } = useProfilingStore();
     const { onnxFile, dataFile, uploadStatus } = useUploadStore();
     const { targetChip } = useGraphStore();
+    const [batchSize, setBatchSize] = useState(1);
 
-    // Fetch profiling data when model is uploaded or target chip changes
+    // Fetch profiling data when model is uploaded, target chip, or batch size changes
     useEffect(() => {
         if (uploadStatus === 'success' && onnxFile) {
             // Model is uploaded, fetch profiling from API
-            fetchProfilingData(onnxFile, dataFile, targetChip);
+            fetchProfilingData(onnxFile, dataFile, targetChip, false, batchSize);
         } else if (uploadStatus !== 'success') {
             // No model uploaded, use placeholder data for demo
             loadPlaceholderData(targetChip);
         }
-    }, [uploadStatus, onnxFile, dataFile, targetChip, fetchProfilingData, loadPlaceholderData]);
+    }, [uploadStatus, onnxFile, dataFile, targetChip, batchSize, fetchProfilingData, loadPlaceholderData]);
 
     // Loading state
     if (profilingStatus === 'loading') {
@@ -69,6 +70,19 @@ export function ProfilingPanel() {
                         {profilingData.boardName}
                     </span>
                 </div>
+            </div>
+
+            {/* Batch Size Input */}
+            <div className="flex items-center gap-3">
+                <label className="text-xs text-zinc-400">Batch Size:</label>
+                <input
+                    type="number"
+                    min="1"
+                    max="256"
+                    value={batchSize}
+                    onChange={(e) => setBatchSize(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-16 px-2 py-1 text-xs bg-zinc-800 border border-zinc-700 rounded-md text-zinc-200 focus:outline-none focus:border-violet-500"
+                />
             </div>
 
             {/* Resource Metrics */}

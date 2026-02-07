@@ -79,7 +79,8 @@ def _get_output_shape_for_layer(layer: LayerInfo, model_info: ModelInfo) -> Opti
 def calculate_ram_usage(
     model_info: ModelInfo,
     input_shape: Optional[list[int]] = None,
-    quantized: bool = False
+    quantized: bool = False,
+    batch_size: int = 1 # batch size var accounts for dynamic shapes
 ) -> int:
     """
     Calculate RAM (arena) memory usage for inference.
@@ -104,8 +105,8 @@ def calculate_ram_usage(
             shape = input_shape or inp.get('shape', [])
             dtype = inp.get('dtype', 'float32')
             bytes_per_element = 1 if quantized else get_dtype_bytes(dtype)
-            # Filter out dynamic dimensions (strings or -1)
-            numeric_shape = [d for d in shape if isinstance(d, int) and d > 0]
+            # Replace dynamic dimensions (strings or -1) with batch_size
+            numeric_shape = [batch_size if not isinstance(d, int) or d <= 0 else d for d in shape]
             if numeric_shape:
                 import numpy as np
                 input_size += int(np.prod(numeric_shape)) * bytes_per_element
@@ -117,7 +118,8 @@ def calculate_ram_usage(
             shape = out.get('shape', [])
             dtype = out.get('dtype', 'float32')
             bytes_per_element = 1 if quantized else get_dtype_bytes(dtype)
-            numeric_shape = [d for d in shape if isinstance(d, int) and d > 0]
+            # Replace dynamic dimensions (strings or -1) with batch_size
+            numeric_shape = [batch_size if not isinstance(d, int) or d <= 0 else d for d in shape]
             if numeric_shape:
                 import numpy as np
                 output_size += int(np.prod(numeric_shape)) * bytes_per_element
@@ -200,7 +202,8 @@ def calculate_total_flops(model_info: ModelInfo) -> tuple[int, list[tuple[str, i
 def profile_model(
     model: onnx.ModelProto,
     board_name: str = 'STM32F401',
-    quantized: bool = False
+    quantized: bool = False,
+    batch_size: int = 1
 ) -> ModelProfile:
     """
     Generate complete profiling results for a model on a specific board.
@@ -223,7 +226,7 @@ def profile_model(
     
     # Calculate metrics
     flash_used = calculate_flash_memory(model_info, quantized)
-    ram_used = calculate_ram_usage(model_info, quantized=quantized)
+    ram_used = calculate_ram_usage(model_info, quantized=quantized, batch_size=batch_size)
     total_flops, layer_flops_list = calculate_total_flops(model_info)
     
     # Build layer profiles

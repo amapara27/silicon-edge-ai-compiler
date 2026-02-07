@@ -36,7 +36,8 @@ interface ProfilingState {
         onnxFile: File,
         dataFile: File | null,
         boardName: string,
-        quantized?: boolean
+        quantized?: boolean,
+        batchSize?: number
     ) => Promise<void>;
 
     // Legacy placeholder function (for testing without backend)
@@ -113,7 +114,7 @@ export const useProfilingStore = create<ProfilingState>((set) => ({
     setProfilingData: (data) => set({ profilingData: data }),
     setVisible: (visible) => set({ isVisible: visible }),
 
-    fetchProfilingData: async (onnxFile, dataFile, boardName, quantized = false) => {
+    fetchProfilingData: async (onnxFile, dataFile, boardName, quantized = false, batchSize = 1) => {
         set({ profilingStatus: 'loading', profilingError: null });
 
         try {
@@ -127,6 +128,7 @@ export const useProfilingStore = create<ProfilingState>((set) => ({
             const url = new URL(`${API_URL}/profile-model/profile`);
             url.searchParams.append('board_name', boardName);
             url.searchParams.append('quantized', String(quantized));
+            url.searchParams.append('batch_size', String(batchSize));
 
             const response = await fetch(url.toString(), {
                 method: 'POST',
