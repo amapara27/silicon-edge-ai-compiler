@@ -1,6 +1,6 @@
-# Silicon: Deterministic Neural Network Compiler for Embedded Systems
+# Silicon: Neural Network Visualizer & Compiler for Embedded Systems
 
-**A zero-dependency, browser-based transpiler that converts high-level models into optimized C99 for microcontrollers.**
+**A zero-dependency, browser-based transpiler that converts ONNX models into optimized C99 for microcontrollers.**
 
 ---
 
@@ -13,72 +13,114 @@ Unlike standard inference engines that rely on heavy runtime interpreters, Silic
 ## 2. Core Features
 
 ### 🎨 Visual Model Architect (GUI)
-A drag-and-drop IDE built with Next.js and React Flow that allows users to design neural networks visually. Configure layer parameters (Dense units, Conv2D kernels) and see real-time output shape calculations.
+A modern IDE built with Next.js and React Flow that displays neural network architectures. Upload ONNX models to visualize layers with:
+- **Input/Output shapes** displayed on each layer node
+- **Parameter counts** for trainable layers  
+- **Compact activation nodes** (ReLU, Sigmoid, Tanh) with distinct styling
+- Real-time graph layout with Input → Layers → Output flow
 
-### ⚡ The "No-Malloc" Compiler Engine
-A custom backend that traverses the computation graph and linearizes it into a purely static C execution path. It guarantees 100% predictable RAM usage.
+### ⚡ ONNX Model Import
+Upload pre-trained `.onnx` models with external data files. The system automatically:
+- Validates model structure and weights
+- Extracts layer information, weight shapes, and operator types
+- Builds interactive visualization of the computation graph
+
+### 📊 Hardware Profiling
+Real-time resource analysis for target microcontrollers:
+- **RAM Usage**: Calculates activation buffer requirements with configurable batch size
+- **Flash Usage**: Computes weight storage from per-tensor dtype analysis  
+- **FLOPS Estimation**: Layer-by-layer computational cost breakdown
+- **Layer Table**: Detailed view with input/output shapes, params, and memory per layer
+
+### 🔧 C99 Code Generation
+Generates production-ready embedded C code:
+- Static weight arrays with `const` qualifiers for Flash storage
+- Dense layer forward pass with bias support
+- Activation functions (ReLU, Sigmoid, Tanh, Softmax)
+- Header file with model configuration macros
+- Zero external dependencies beyond `<math.h>`
 
 ### 🧠 "Ping-Pong" Memory Optimization
 Silicon implements a buffer-coloring algorithm to reuse memory. Instead of unique buffers for every layer, it creates a shared "Arena" where intermediate activations overwrite each other safely, reducing RAM footprint by up to 40%.
 
-### 🤖 Agentic Hardware Optimizer
-An LLM-based agent (Gemini/OpenAI) that acts as an "Embedded Systems Engineer." It cross-references model statistics (FLOPs, Param Count) against the target MCU's specs (Flash/RAM) to suggest architecture changes or quantization strategies.
+## 3. Technical Architecture
 
-### ✅ Bit-Accurate Verification
-Automatically generates a Python "Ground Truth" vector and compares it against the simulated C output to verify numerical stability before deployment.
+### Backend Services
+- **load_model.py**: ONNX parsing, weight extraction, layer info with shape analysis
+- **profile_model.py**: RAM/Flash calculation, FLOPS estimation, per-layer profiling
+- **compile_model.py**: C99 code generation with Jinja2 templates
 
-## 3. Technical Deep Dive
+### Frontend Components
+- **Graph Visualization**: React Flow with custom node types (Input, Layer, Output)
+- **Profiling Panel**: Memory gauges, FLOPS display, layer breakdown table
+- **Import Modal**: Drag-and-drop ONNX upload with validation feedback
 
-### The Memory Arena (Static Allocation)
-Silicon flattens the execution graph and performs **liveness analysis** to calculate exactly when each tensor is used.
-*   **Arena Mapping**: Maps two pointers (`*current_in`, `*current_out`) to a single static float `arena[MAX_SIZE]`.
-*   **Result**: A model that naively requires 100KB of RAM can run in ~20KB with mathematically proven safety.
-
-### The Transpilation Pipeline
-1.  **Ingest**: Frontend exports graph JSON.
-2.  **Parse**: Backend converts to internal graph representation (ONNX-compatible).
-3.  **Generate**: Jinja2 templates inject weights into `PROGMEM` (Flash) arrays and unroll loop logic for the `forward_pass()` function.
-4.  **Deploy**: Download `model.h` and `model.c` and drop them into your firmware project.
+### Supported Layer Types
+| Layer | Visualization | C Generation |
+|-------|---------------|--------------|
+| Dense/Gemm | ✅ In/Out shapes | ✅ Full support |
+| ReLU | ✅ Compact node | ✅ Full support |
+| Sigmoid | ✅ Compact node | ✅ Full support |
+| Tanh | ✅ Compact node | ✅ Full support |
+| Softmax | ✅ Compact node | ✅ Full support |
+| Conv2D | ✅ In/Out channels | 🚧 In progress |
 
 ## 4. Technical Stack
 
-- **Frontend**: Next.js 14, TypeScript, Tailwind CSS, React Flow, Zustand.
-- **Backend**: Python (FastAPI), NumPy (Verification), ONNX (Parsing), Jinja2 (C Generation).
-- **Embedded Target**: Standard C99 (No external dependencies, math library only).
-- **AI Integration**: Google Gemini API / OpenAI API.
+- **Frontend**: Next.js 16, TypeScript, Tailwind CSS, React Flow, Zustand
+- **Backend**: Python (FastAPI), NumPy, ONNX, uvicorn
+- **Embedded Target**: Standard C99 (No external dependencies, `<math.h>` only)
 
-## 5. Use Cases & Market Impact
+## 5. Use Cases
 
-### Generalized Use Cases
-*   **Predictive Maintenance**: Identifying mechanical failure patterns in industrial motors.
-*   **Edge Computing**: Real-time signal processing without cloud dependency.
-*   **Low-Power IoT**: Running inference on battery-constrained devices.
-
-### Specific Examples
-*   **Formula SAE DAQ Systems**: Processing sensor data at high frequencies with deterministic latency for safety-critical telemetry.
-*   **Smart Wearables**: Efficient gesture recognition or heart-rate analysis on ultra-low-power Cortex-M0+ chips.
-*   **Smart Agriculture**: Leaf disease classification on ESP32-CAM modules for remote field monitoring.
+- **Predictive Maintenance**: Identifying mechanical failure patterns in industrial motors
+- **Formula SAE DAQ**: Real-time sensor processing with deterministic latency
+- **Smart Wearables**: Gesture recognition on ultra-low-power Cortex-M0+ chips
+- **Smart Agriculture**: Leaf disease classification on ESP32-CAM modules
 
 ## 6. Implementation Status
 
 | Feature | Status |
-|---|---|
-| **Visual Architect (GUI)** | ✅ Implemented (v0.1) |
-| **Basic Layer Nodes (Input, Dense, Output)** | ✅ Implemented |
-| **Live Shape Calculation** | ✅ Implemented |
-| **C99 Code Generation (Dense Layers)** | 🚧 In Progress |
+|---------|--------|
+| **Visual Architect (GUI)** | ✅ Implemented |
+| **ONNX Import with External Data** | ✅ Implemented |
+| **Layer Visualization (Shapes/Params)** | ✅ Implemented |
+| **Hardware Profiling (RAM/Flash/FLOPS)** | ✅ Implemented |
+| **Batch Size Configuration** | ✅ Implemented |
+| **C99 Code Generation (Dense/Activations)** | ✅ Implemented |
+| **Compact Activation Nodes** | ✅ Implemented |
+| **Conv2D Code Generation** | 🚧 In Progress |
 | **Memory Arena Optimizer** | 📅 Roadmap |
-| **ONNX Export/Import** | 📅 Roadmap |
-| **Agentic Optimizer** | 📅 Roadmap |
-| **Quantization (Fixed-point)** | 📅 Roadmap |
+| **Quantization (INT8)** | 📅 Roadmap |
+| **Agentic Hardware Optimizer** | 📅 Roadmap |
 
 ---
 
 ## Getting Started
 
-1.  **Clone the Repo**: `git clone https://github.com/amapara27/silicon-edge-ai-compiler.git`
-2.  **Run Frontend**: `cd frontend && npm install && npm run dev`
-3.  **Run Backend**: `cd backend && pip install -r requirements.txt && python main.py`
+### Prerequisites
+- Node.js 18+
+- Python 3.11+
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/amapara27/silicon-edge-ai-compiler.git
+cd silicon-edge-ai-compiler
+
+# Frontend
+cd frontend && npm install && npm run dev
+
+# Backend (new terminal)
+cd backend/app && pip install -r ../requirements.txt && uvicorn main:app --reload
+```
+
+### Usage
+1. Open http://localhost:3000
+2. Click "Import Model" and upload an ONNX file with its `.data` file
+3. View the generated graph with layer shapes and parameters
+4. Check the Profiling panel for RAM/Flash usage
+5. Download generated C code from the compilation output
 
 ---
-*Created with 🧊 Silicon*
