@@ -2,6 +2,7 @@
 
 import { Zap, Plus, Upload, FolderOpen, ArrowRight, Cpu } from 'lucide-react';
 import { useAppStore } from '@/store/appStore';
+import LoginLogoutButton from './ui/LoginLogoutButton';
 
 interface OptionCardProps {
     title: string;
@@ -60,7 +61,10 @@ export function LandingPage() {
     const { setMode } = useAppStore();
 
     return (
-        <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-8">
+        <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-8 relative">
+            <div className="absolute top-8 right-8">
+                <LoginLogoutButton />
+            </div>
             {/* Header */}
             <div className="text-center mb-14">
                 <div className="flex items-center justify-center gap-3 mb-5">

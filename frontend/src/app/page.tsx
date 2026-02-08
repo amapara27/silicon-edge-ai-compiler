@@ -19,6 +19,7 @@ import { Inspector } from '@/components/Inspector';
 import { CodePreview } from '@/components/CodePreview';
 import { ProfilingPanel } from '@/components/profiling';
 import { LandingPage } from '@/components/LandingPage';
+import LoginLogoutButton from '@/components/ui/LoginLogoutButton';
 import { Settings2, Code2, ChevronLeft, ChevronRight, Home as HomeIcon, Activity } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -133,6 +134,9 @@ function Playground() {
           <div className="ml-4 text-xs text-zinc-600 font-medium tracking-wide">
             {mode === 'build-new' && 'Building New Model'}
             {mode === 'import-existing' && 'Imported Model'}
+          </div>
+          <div className="ml-auto">
+            <LoginLogoutButton />
           </div>
         </div>
 

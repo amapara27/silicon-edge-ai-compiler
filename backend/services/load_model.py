@@ -136,6 +136,7 @@ def extract_layers(model: onnx.ModelProto, weights: list[WeightInfo]) -> list[La
     return layers
 
 
+# calls all extraction functions and returning one ModelInfo object
 def extract_model_info(model: onnx.ModelProto) -> ModelInfo:
     graph = model.graph
     

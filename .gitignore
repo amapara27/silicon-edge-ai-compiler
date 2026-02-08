@@ -5,6 +5,7 @@
 /frontend/next-env.d.ts
 /frontend/next.config.js
 /frontend/node_modules
+/frontend/.env.local
 
 /backend/test_models
 

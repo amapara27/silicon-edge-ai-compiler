@@ -24,7 +24,7 @@ class ProfileResponse(BaseModel):
 async def profile_onnx_model(
     file: UploadFile = File(...), 
     data_file: Optional[UploadFile] = File(None),
-    board_name: str = "STM32F401",
+    board_name: str = "STM32F401", # hardcoded for now
     quantized: bool = False,
     batch_size: int = 1
 ):
