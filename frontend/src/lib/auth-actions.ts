@@ -2,18 +2,23 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { z } from 'zod';
 
 import { createClient } from "@/utils/supabase/server";
 
 export async function login(formData: FormData) {
     const supabase = await createClient();
 
-    // type-casting here for convenience
-    // in practice, you should validate your inputs
-    const data = {
+    // signup info data validation
+    const loginSchema = z.object({
+        email: z.string().email(),
+        password: z.string().min(8),
+    });
+
+    const data = loginSchema.parse({
         email: formData.get("email") as string,
         password: formData.get("password") as string,
-    };
+    });
 
     const { error } = await supabase.auth.signInWithPassword(data);
 
@@ -28,17 +33,29 @@ export async function login(formData: FormData) {
 export async function signup(formData: FormData) {
     const supabase = await createClient();
 
-    // type-casting here for convenience
-    // in practice, you should validate your inputs
-    const firstName = formData.get("first-name") as string;
-    const lastName = formData.get("last-name") as string;
-    const data = {
+    // input validation
+    const signupSchema = z.object({
+        first_name: z.string().min(1),
+        last_name: z.string().min(1),
+        email: z.string().email(),
+        password: z.string().min(8),
+    });
+
+    const validated = signupSchema.parse({
+        first_name: formData.get("first-name") as string,
+        last_name: formData.get("last-name") as string,
         email: formData.get("email") as string,
         password: formData.get("password") as string,
+    });
+
+    // Build Supabase signup data
+    const data = {
+        email: validated.email,
+        password: validated.password,
         options: {
             data: {
-                full_name: `${firstName + " " + lastName}`,
-                email: formData.get("email") as string,
+                full_name: `${validated.first_name} ${validated.last_name}`,
+                email: validated.email,
             },
         },
     };
