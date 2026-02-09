@@ -1,8 +1,9 @@
 'use client';
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Zap, CheckCircle } from 'lucide-react';
+import { Zap, CheckCircle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { Button } from "@/components/ui/button";
 
 const LogoutPage = () => {
     const router = useRouter();
@@ -55,12 +56,11 @@ const LogoutPage = () => {
             </div>
 
             {/* Manual redirect */}
-            <div className="mt-8">
-                <Link
-                    href="/"
-                    className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors"
-                >
-                    ← Back to home now
+            <div className="mt-12">
+                <Link href="/">
+                    <Button variant="ghost" className="text-zinc-600 hover:text-zinc-400 text-xs gap-2">
+                        ← Back to home now
+                    </Button>
                 </Link>
             </div>
         </div>
