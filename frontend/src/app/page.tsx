@@ -19,8 +19,10 @@ import { Inspector } from '@/components/Inspector';
 import { CodePreview } from '@/components/CodePreview';
 import { ProfilingPanel } from '@/components/profiling';
 import { LandingPage } from '@/components/LandingPage';
+import { LoadPreviousPanel } from '@/components/LoadPreviousPanel';
+import { SaveModelDialog } from '@/components/SaveModelDialog';
 import LoginLogoutButton from '@/components/ui/LoginLogoutButton';
-import { Settings2, Code2, ChevronLeft, ChevronRight, Home as HomeIcon, Activity } from 'lucide-react';
+import { Settings2, Code2, ChevronLeft, ChevronRight, Home as HomeIcon, Activity, Save } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 const nodeTypes = {
@@ -49,6 +51,7 @@ function Playground() {
   const [leftPanelOpen, setLeftPanelOpen] = useState(false);
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'inspector' | 'code' | 'profiling'>('inspector');
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
 
   // Clear graph when entering build-new mode
   useEffect(() => {
@@ -135,7 +138,14 @@ function Playground() {
             {mode === 'build-new' && 'Building New Model'}
             {mode === 'import-existing' && 'Imported Model'}
           </div>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={() => setSaveDialogOpen(true)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-white bg-zinc-800/50 border border-zinc-700/50 hover:bg-zinc-700/50 transition-all"
+            >
+              <Save className="w-3.5 h-3.5" />
+              Save
+            </button>
             <LoginLogoutButton />
           </div>
         </div>
@@ -253,6 +263,11 @@ function Playground() {
           </div>
         )}
       </div>
+      {/* Save Model Dialog */}
+      <SaveModelDialog
+        isOpen={saveDialogOpen}
+        onClose={() => setSaveDialogOpen(false)}
+      />
     </div>
   );
 }
@@ -260,9 +275,12 @@ function Playground() {
 export default function Home() {
   const { mode } = useAppStore();
 
-  // Show landing page or playground based on mode
   if (mode === 'landing') {
     return <LandingPage />;
+  }
+
+  if (mode === 'load-previous') {
+    return <LoadPreviousPanel />;
   }
 
   return <Playground />;

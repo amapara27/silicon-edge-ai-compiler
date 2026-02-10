@@ -100,12 +100,10 @@ export function LandingPage() {
 
                 <OptionCard
                     title="Load Previous"
-                    description="No saved models available"
+                    description="Open a previously saved model project"
                     icon={<FolderOpen className="w-7 h-7 text-white" />}
-                    gradient="from-zinc-600 to-zinc-700"
+                    gradient="from-sky-500 to-blue-600"
                     onClick={() => setMode('load-previous')}
-                    disabled={true}
-                    badge="Soon"
                 />
             </div>
 
