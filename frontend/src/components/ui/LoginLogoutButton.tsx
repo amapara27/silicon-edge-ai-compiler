@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { signout } from "@/lib/auth-actions";
-import { LogIn, LogOut } from "lucide-react";
+import { LogIn, LogOut, User } from "lucide-react";
 
 const LoginLogoutButton = () => {
     const [user, setUser] = useState<any>(null);
@@ -30,16 +30,25 @@ const LoginLogoutButton = () => {
 
     if (user) {
         return (
-            <button
-                onClick={() => {
-                    signout();
-                    setUser(null);
-                }}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-zinc-800/50 border border-zinc-700/50 text-zinc-300 hover:bg-zinc-700/50 hover:text-white transition-all duration-200"
-            >
-                <LogOut className="w-4 h-4" />
-                Log out
-            </button>
+            <div className="flex items-center gap-2">
+                <button
+                    onClick={() => router.push('/profile')}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-zinc-800/50 border border-zinc-700/50 text-zinc-300 hover:bg-zinc-700/50 hover:text-white transition-all duration-200"
+                    title="My Profile"
+                >
+                    <User className="w-4 h-4" />
+                </button>
+                <button
+                    onClick={() => {
+                        signout();
+                        setUser(null);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-zinc-800/50 border border-zinc-700/50 text-zinc-300 hover:bg-zinc-700/50 hover:text-white transition-all duration-200"
+                >
+                    <LogOut className="w-4 h-4" />
+                    Log out
+                </button>
+            </div>
         );
     }
 
