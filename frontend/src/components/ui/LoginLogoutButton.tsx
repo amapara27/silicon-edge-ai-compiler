@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { signout } from "@/lib/auth-actions";
+import { useAppStore } from "@/store/appStore";
 import { LogIn, LogOut, User } from "lucide-react";
 
 const LoginLogoutButton = () => {
@@ -40,6 +41,7 @@ const LoginLogoutButton = () => {
                 </button>
                 <button
                     onClick={() => {
+                        useAppStore.getState().goToLanding();
                         signout();
                         setUser(null);
                     }}

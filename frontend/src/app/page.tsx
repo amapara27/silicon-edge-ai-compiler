@@ -273,7 +273,17 @@ function Playground() {
 }
 
 export default function Home() {
-  const { mode } = useAppStore();
+  const { mode, goToLanding } = useAppStore();
+
+  // After auth redirect (?code=...), reset to landing page
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('code')) {
+      goToLanding();
+      // Clean up the URL
+      window.history.replaceState({}, '', '/');
+    }
+  }, [goToLanding]);
 
   if (mode === 'landing') {
     return <LandingPage />;
