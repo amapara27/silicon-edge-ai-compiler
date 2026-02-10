@@ -9,7 +9,7 @@ import { useModelSaveStore, SavedModel, SavedModelMetrics } from '@/store/modelS
 import { useGraphStore } from '@/store/graphStore';
 import { useUploadStore } from '@/store/uploadStore';
 import { useAppStore } from '@/store/appStore';
-import { createClient } from '@/utils/supabase/client';
+import { checkAuthAction } from '@/app/actions/models';
 
 function formatBytes(bytes: number): string {
     if (bytes >= 1048576) return `${(bytes / 1048576).toFixed(1)}MB`;
@@ -167,10 +167,10 @@ export function LoadPreviousPanel() {
 
     useEffect(() => {
         const checkAuth = async () => {
-            const supabase = createClient();
-            const { data: { user } } = await supabase.auth.getUser();
-            setIsAuthenticated(!!user);
-            if (user) {
+            const result = await checkAuthAction();
+            const authed = result.success && result.data?.authenticated;
+            setIsAuthenticated(!!authed);
+            if (authed) {
                 fetchSavedModels();
             }
         };

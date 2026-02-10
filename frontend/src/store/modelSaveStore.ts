@@ -1,9 +1,15 @@
 'use client';
 
 import { create } from 'zustand';
-import { createClient } from '@/utils/supabase/client';
 import { Node, Edge } from '@xyflow/react';
 import { NodeData } from '@/store/graphStore';
+import {
+    fetchSavedModelsAction,
+    saveModelAction,
+    loadModelAction,
+    deleteModelAction,
+    SavedModelRow,
+} from '@/app/actions/models';
 
 // ── Types ──
 
@@ -17,34 +23,18 @@ export interface SavedModelMetrics {
     board_name?: string;
 }
 
-export interface SavedModel {
-    id: string;
-    user_id: string;
-    name: string;
-    version: number;
-    target_chip: string;
-    metrics: SavedModelMetrics;
-    onnx_path: string;
-    c_code_path: string | null;
-    gui_state_path: string | null;
-    is_deployed: boolean;
-    created_at: string;
-    updated_at: string;
-}
-
+export type SavedModel = SavedModelRow;
 export type SaveStatus = 'idle' | 'saving' | 'success' | 'error';
 export type LoadStatus = 'idle' | 'loading' | 'success' | 'error';
 export type FetchStatus = 'idle' | 'fetching' | 'success' | 'error';
 
 interface ModelSaveState {
-    // State
     savedModels: SavedModel[];
     saveStatus: SaveStatus;
     loadStatus: LoadStatus;
     fetchStatus: FetchStatus;
     error: string | null;
 
-    // Actions
     fetchSavedModels: () => Promise<void>;
     saveModel: (params: {
         name: string;
@@ -68,8 +58,6 @@ interface ModelSaveState {
     resetLoadStatus: () => void;
 }
 
-const BUCKET = 'models';
-
 export const useModelSaveStore = create<ModelSaveState>((set, get) => ({
     savedModels: [],
     saveStatus: 'idle',
@@ -77,123 +65,41 @@ export const useModelSaveStore = create<ModelSaveState>((set, get) => ({
     fetchStatus: 'idle',
     error: null,
 
-    // ── Fetch all saved models for the current user ──
+    // ── Fetch (delegates to server action) ──
     fetchSavedModels: async () => {
         set({ fetchStatus: 'fetching', error: null });
+        const result = await fetchSavedModelsAction();
 
-        try {
-            const supabase = createClient();
-            const { data: { user } } = await supabase.auth.getUser();
-
-            if (!user) {
-                set({ fetchStatus: 'error', error: 'Not authenticated' });
-                return;
-            }
-
-            const { data, error } = await supabase
-                .from('saved_models')
-                .select('*')
-                .eq('user_id', user.id)
-                .order('updated_at', { ascending: false });
-
-            if (error) throw error;
-
-            set({
-                savedModels: data as SavedModel[],
-                fetchStatus: 'success',
-                error: null,
-            });
-        } catch (error) {
-            set({
-                fetchStatus: 'error',
-                error: error instanceof Error ? error.message : 'Failed to fetch models',
-            });
+        if (result.success && result.data) {
+            set({ savedModels: result.data, fetchStatus: 'success', error: null });
+        } else {
+            set({ fetchStatus: 'error', error: result.error || 'Failed to fetch models' });
         }
     },
 
-    // ── Save a model ──
+    // ── Save (builds FormData, delegates to server action) ──
     saveModel: async ({ name, onnxFile, dataFile, graphNodes, graphEdges, targetChip, metrics }) => {
         set({ saveStatus: 'saving', error: null });
 
         try {
-            const supabase = createClient();
-            const { data: { user } } = await supabase.auth.getUser();
-
-            if (!user) {
-                set({ saveStatus: 'error', error: 'Not authenticated' });
-                return;
-            }
-
-            // Generate a unique model ID for storage paths
-            const modelId = crypto.randomUUID();
-            const basePath = `${user.id}/${modelId}`;
-
-            // 1. Upload .onnx to bucket
-            const onnxPath = `${basePath}/model.onnx`;
-            const { error: onnxError } = await supabase.storage
-                .from(BUCKET)
-                .upload(onnxPath, onnxFile, {
-                    contentType: 'application/octet-stream',
-                    upsert: true,
-                });
-            if (onnxError) throw new Error(`ONNX upload failed: ${onnxError.message}`);
-
-            // 2. Upload .data to bucket
-            let cCodePath: string | null = null;
+            const formData = new FormData();
+            formData.append('name', name);
+            formData.append('targetChip', targetChip);
+            formData.append('metrics', JSON.stringify(metrics || {}));
+            formData.append('onnxFile', onnxFile);
             if (dataFile) {
-                cCodePath = `${basePath}/model.data`;
-                const { error: dataError } = await supabase.storage
-                    .from(BUCKET)
-                    .upload(cCodePath, dataFile, {
-                        contentType: 'application/octet-stream',
-                        upsert: true,
-                    });
-                if (dataError) throw new Error(`Data file upload failed: ${dataError.message}`);
+                formData.append('dataFile', dataFile);
             }
+            formData.append('guiState', JSON.stringify({ nodes: graphNodes, edges: graphEdges }));
 
-            // 3. Upload graph JSON (React Flow nodes + edges) to bucket
-            const guiState = JSON.stringify({ nodes: graphNodes, edges: graphEdges });
-            const guiBlob = new Blob([guiState], { type: 'application/json' });
-            const guiStatePath = `${basePath}/graph.json`;
-            const { error: guiError } = await supabase.storage
-                .from(BUCKET)
-                .upload(guiStatePath, guiBlob, {
-                    contentType: 'application/json',
-                    upsert: true,
-                });
-            if (guiError) throw new Error(`GUI state upload failed: ${guiError.message}`);
+            const result = await saveModelAction(formData);
 
-            // 4. Determine next version number
-            const { data: existing } = await supabase
-                .from('saved_models')
-                .select('version')
-                .eq('user_id', user.id)
-                .eq('name', name)
-                .order('version', { ascending: false })
-                .limit(1);
-
-            const nextVersion = existing && existing.length > 0 ? existing[0].version + 1 : 1;
-
-            // 5. Insert row into saved_models
-            const { error: insertError } = await supabase
-                .from('saved_models')
-                .insert({
-                    user_id: user.id,
-                    name,
-                    version: nextVersion,
-                    target_chip: targetChip,
-                    metrics: metrics || {},
-                    onnx_path: onnxPath,
-                    c_code_path: cCodePath,
-                    gui_state_path: guiStatePath,
-                });
-
-            if (insertError) throw new Error(`Database insert failed: ${insertError.message}`);
-
-            set({ saveStatus: 'success', error: null });
-
-            // Refresh the list
-            await get().fetchSavedModels();
+            if (result.success) {
+                set({ saveStatus: 'success', error: null });
+                await get().fetchSavedModels();
+            } else {
+                set({ saveStatus: 'error', error: result.error || 'Save failed' });
+            }
         } catch (error) {
             set({
                 saveStatus: 'error',
@@ -202,66 +108,39 @@ export const useModelSaveStore = create<ModelSaveState>((set, get) => ({
         }
     },
 
-    // ── Load a model ──
+    // ── Load (server action returns signed URLs + graph JSON, client fetches files) ──
     loadModel: async (modelId: string) => {
         set({ loadStatus: 'loading', error: null });
 
         try {
-            const supabase = createClient();
+            const result = await loadModelAction(modelId);
 
-            // 1. Fetch the model row
-            const { data: model, error: fetchError } = await supabase
-                .from('saved_models')
-                .select('*')
-                .eq('id', modelId)
-                .single();
-
-            if (fetchError || !model) {
-                throw new Error('Model not found');
+            if (!result.success || !result.data) {
+                set({ loadStatus: 'error', error: result.error || 'Load failed' });
+                return null;
             }
 
-            // 2. Download .onnx from bucket
-            const { data: onnxData, error: onnxError } = await supabase.storage
-                .from(BUCKET)
-                .download(model.onnx_path);
+            const { model, onnxUrl, dataUrl, guiState } = result.data;
 
-            if (onnxError || !onnxData) {
-                throw new Error(`ONNX download failed: ${onnxError?.message}`);
-            }
+            // Download .onnx via signed URL (client-side fetch of the file blob)
+            const onnxResponse = await fetch(onnxUrl);
+            if (!onnxResponse.ok) throw new Error('Failed to download ONNX file');
+            const onnxBlob = await onnxResponse.blob();
+            const onnxFile = new File([onnxBlob], 'model.onnx', { type: 'application/octet-stream' });
 
-            const onnxFile = new File([onnxData], 'model.onnx', {
-                type: 'application/octet-stream',
-            });
-
-            // 3. Download .data from bucket (if exists)
+            // Download .data via signed URL (if exists)
             let dataFile: File | null = null;
-            if (model.c_code_path) {
-                const { data: dataBlob, error: dataError } = await supabase.storage
-                    .from(BUCKET)
-                    .download(model.c_code_path);
-
-                if (!dataError && dataBlob) {
-                    dataFile = new File([dataBlob], 'model.data', {
-                        type: 'application/octet-stream',
-                    });
+            if (dataUrl) {
+                const dataResponse = await fetch(dataUrl);
+                if (dataResponse.ok) {
+                    const dataBlob = await dataResponse.blob();
+                    dataFile = new File([dataBlob], 'model.data', { type: 'application/octet-stream' });
                 }
             }
 
-            // 4. Download graph.json from bucket
-            let graphNodes: Node<NodeData>[] = [];
-            let graphEdges: Edge[] = [];
-            if (model.gui_state_path) {
-                const { data: guiBlob, error: guiError } = await supabase.storage
-                    .from(BUCKET)
-                    .download(model.gui_state_path);
-
-                if (!guiError && guiBlob) {
-                    const guiText = await guiBlob.text();
-                    const guiState = JSON.parse(guiText);
-                    graphNodes = guiState.nodes || [];
-                    graphEdges = guiState.edges || [];
-                }
-            }
+            // Graph state already parsed server-side
+            const graphNodes = (guiState?.nodes || []) as Node<NodeData>[];
+            const graphEdges = (guiState?.edges || []) as Edge[];
 
             set({ loadStatus: 'success', error: null });
 
@@ -282,36 +161,14 @@ export const useModelSaveStore = create<ModelSaveState>((set, get) => ({
         }
     },
 
-    // ── Delete a model ──
+    // ── Delete (delegates to server action) ──
     deleteModel: async (modelId: string) => {
         try {
-            const supabase = createClient();
-
-            // Fetch the model to get storage paths
-            const { data: model } = await supabase
-                .from('saved_models')
-                .select('*')
-                .eq('id', modelId)
-                .single();
-
-            if (model) {
-                // Delete bucket files
-                const pathsToDelete = [model.onnx_path];
-                if (model.c_code_path) pathsToDelete.push(model.c_code_path);
-                if (model.gui_state_path) pathsToDelete.push(model.gui_state_path);
-
-                await supabase.storage.from(BUCKET).remove(pathsToDelete);
+            const result = await deleteModelAction(modelId);
+            if (!result.success) {
+                set({ error: result.error || 'Delete failed' });
+                return;
             }
-
-            // Delete the database row
-            const { error } = await supabase
-                .from('saved_models')
-                .delete()
-                .eq('id', modelId);
-
-            if (error) throw error;
-
-            // Refresh the list
             await get().fetchSavedModels();
         } catch (error) {
             set({
